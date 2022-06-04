@@ -1,140 +1,112 @@
-//#include "includes.h"
 #include "funcs.h"
-//for loop: (int i = 0; i < limit; i++)
-///vector for loop: for (int x : vector)
+#include "clicker.h"
 
-//compare strings using either [==] or [.compare]
-/// [s] and [t] are strings. if you compare using ==,
-/// it will return true or false; true if they are the same.
-/// if you compare using: s.compare(t), it will return -1 if 
-/// [s] is "lower than" [t], +1 if [s] is "greater than" [t],
-/// and 0 if [s] is equal to [t] 
+using std::cout;
+using std::string;
+constexpr auto tilda_key = 0xC0;
+std::string active_window{};
 
-//if statements can be written arithmetically as: (condition) ? expression1 : expression2
-/// this is the same thing as doing if (condition) {expression1} else {expression2}
-/// we can actually use this to set values; value = (condition) ? expression1 : expression2
-/// this will set value to expression1 if condition is true, else set it to expression2.
+static int g_cps = 10;
 
-//using the [extern] keyword, we can make [const] variables have external linkage.
-/// they are internal by default.
-/// likewise, using the [static] keyword will make other variables internal, and have no linkage
-/// [static] makes variables unable to be reset. This means that this variable can only be
-/// initialized once, unlike "local" variables in functions.
-
-namespace oof
+namespace clickthreads
 {
-	bool isKeyJustReleased(DWORD virtualKey)
-	{
-		if (GetAsyncKeyState(virtualKey))
+	using namespace std::chrono_literals;
+	void right_arrow() {
+		while (1)
 		{
-			Sleep(1);
-			if (!GetAsyncKeyState(virtualKey))
+			if (clicker::isKeyJustPressed(VK_RIGHT))
 			{
-				return true;
+				++g_cps;
+				clicker::PrintAtCoords("CPS: " + std::to_string(g_cps), 0, 8, true);
 			}
 		}
-		return false;
 	}
-	bool isKeyJustPressed(DWORD virtualKey)
+	void left_arrow()
 	{
-		if (!GetAsyncKeyState(virtualKey))
+		while (1)
 		{
-			Sleep(1);
-			if (GetAsyncKeyState(virtualKey))
+			if (clicker::isKeyJustPressed(VK_LEFT))
 			{
-				return true;
+				--g_cps;
+				clicker::PrintAtCoords("CPS: " + std::to_string(g_cps), 0, 8, true);
 			}
 		}
-		return false;
 	}
-	std::string GetActiveWindowTitle()
+	void up_arrow()
 	{
-		//tysm quicknet!
-		HWND handle = GetForegroundWindow();
-		char buf[1000]{};
-		GetWindowTextA(handle, buf, 1000);
-		std::string const window_title = buf;
-		return window_title;
+		while (1) {
+			if (clicker::isKeyJustPressed(VK_UP))
+			{
+				active_window = clicker::get_printActiveWindow();
+			}
+		}
 	}
-	void leftClickMouse(int sleepTime)
+	void click(int clickKey)
 	{
-		mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-		Sleep(sleepTime);
-		mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+		while (1)
+		{
+			if (clicker::GetActiveWindowTitle() == active_window)
+			{
+				clicker::leftClickWithKey(clickKey);
+				Sleep(980 / g_cps); //dividing by 980 to compensate for exe slowness, this works best.
+			}
+		}
 	}
-	SHORT GetVKFromChar(int ch)
+	void endEverything()
 	{
-		return VkKeyScanA(ch);
-	}
-	int CinCharToKey()
-	{
-		char buf;
-		int ret;
-		std::cin >> buf;
-		ret = static_cast<int>(buf);
-		return ret;
-	}
-	void PrintAtCoords(std::string text, int x, int y)
-	{
-		COORD c = { x, y };
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
-		std::cout << text;
-	}
-	int randomNum(int bottom, int top)
-	{
-		return (rand() % top + bottom);
+		while (1)
+		{
+			if (clicker::isKeyJustPressed(tilda_key))
+			{
+				exit(1);
+			}
+		}
 	}
 }
 
-std::string deadSpaces = "                                                                                                                                                          ";
+//thank you Sai for telling me to do thread.detach!
 
 int main()
 {
-	using std::cout;
-	using std::string;
-	SetConsoleTitleA("Scriptcat autoclicker || ALPHA || TILDA TO QUIT");
-	std::cout << "Please enter a key, IN CAPS, that you want to HOLD for the autoclicker!" << '\n'; //coord 0
-	int keytocheck = oof::CinCharToKey(); //coord 1
-	auto consoleHandle = GetActiveWindow();
-	//
-	string window_title;
-	int click = 0;
-	bool autoclicker_on = false;
-	//setup done
-askForCPS:
-	oof::PrintAtCoords("Bottom limit CPS: ", 0, 2);
-	int bottomCPS{};
-	std::cin >> bottomCPS;
-	oof::PrintAtCoords(deadSpaces, 0, 4);
-	oof::PrintAtCoords("Top limit CPS: ", 0, 3);
-	int topCPS{};
-	std::cin >> topCPS;
-	if (topCPS < bottomCPS)
+
+	clicker::startup();
+	int clickKey = clicker::askForClickerKey();
+
+	//starting threads
+
+	//right arrow detection (more CPS)
+	std::thread right_detection(clickthreads::right_arrow);
+	right_detection.detach();
+
+	//left arrow detection (less CPS)
+	std::thread left_detection(clickthreads::left_arrow);
+	left_detection.detach();
+
+	//up arrow detection (window selection)
+	std::thread up_detection(clickthreads::up_arrow);
+	up_detection.detach();
+
+	//actual click thread
+	std::thread click_mouse(clickthreads::click, clickKey);
+	click_mouse.detach();
+
+	//tilda key detection thread
+	std::thread tilda_detection(clickthreads::endEverything);
+	tilda_detection.detach();
+
+	//pre-printing here:
+	clicker::PrintAtCoords("-----ACTIVE WINDOW-----", 0, 4, false);
+	clicker::PrintAtCoords("-----CPS-----", 0, 7, false);
+	clicker::PrintAtCoords("CPS: " + std::to_string(g_cps), 0, 8, false);
+
+	//this keeps the program from just returning 404.
+	//the actual tilda key detection is in a thread.
+	//probably a dogshit way of doing so but idc
+	while (!clicker::isKeyJustPressed(tilda_key))
 	{
-		oof::PrintAtCoords("Top limit cannot be less than bottom limit!", 0, 4);
-		return -1;
+		Sleep(1);
 	}
-	oof::PrintAtCoords("Press UP ARROW to determine your window!", 0, 5);
-	//0xC0 is ` or ~, the tilda.
-	while (!GetAsyncKeyState(0xC0))
-	{
-		if (oof::isKeyJustPressed(VK_UP))
-		{
-			window_title = oof::GetActiveWindowTitle();
-			oof::PrintAtCoords("----SELECTED WINDOW----", 0, 7);
-			std::string str = "You have chosen " + window_title;
-			oof::PrintAtCoords(deadSpaces, 0, 8);
-			oof::PrintAtCoords(str, 0, 8);
-		}
-		if (oof::GetActiveWindowTitle() == window_title)
-		{
-			if (GetAsyncKeyState(keytocheck))
-			{
-				oof::leftClickMouse(1);
-				Sleep(1000 / (oof::randomNum(bottomCPS, topCPS)));
-			}
-		}
-	}
-	
-	return 0;
+
+	//return 404 if we somehow got here. this is very wrong if we did so.
+	return 404;
 }
