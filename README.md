@@ -3,6 +3,7 @@
 A simple autoclicker made in C++.
 
 ## Keybinds:
+- Hold ~ key (w/o caps) to quit autoclicker.
 - RBRACKET to increase CPS
 - LBRACKET to decrease CPS
 - UP ARROW to select a window NAME (not .exe) to use the autoclicker on
