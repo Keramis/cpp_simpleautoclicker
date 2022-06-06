@@ -1,3 +1,4 @@
+#define _WIN32_WINNT 0x0500
 #include "funcs.h"
 #include "clicker.h"
 
@@ -14,14 +15,19 @@ int g_click_key{};
 int g_click_hold = 1;
 bool g_left_active = true;
 std::string g_active_key_print{};
+bool g_human_hold_randomization = false;
+int g_autoclicker_delay_divide = 999;
+
+std::vector<std::string> static const loadingIcons{"|", "/", "--", "\\"}; //thx maddy lmao
 
 namespace vanillaKeys
 {
-	extern constexpr int tilda_key = 96;
-	extern constexpr int right_bracket = 93;
-	extern constexpr int left_braket = 91;
-	extern constexpr int lowercase_v = 118;
-	extern constexpr int capital_v = 86;
+	constexpr int tilda_key = 96;
+	constexpr int right_bracket = 93;
+	constexpr int left_braket = 91;
+	constexpr int lowercase_v = 118;
+	constexpr int capital_v = 86;
+	constexpr int f1_or_semicolon = 59;
 }
 
 namespace util
@@ -45,6 +51,18 @@ namespace util
 	{
 		clicker::PrintAtCoords(g_active_key_print, 0, 10, true);
 	}
+	void printIfHumanRandomization()
+	{
+		clicker::PrintAtCoords("----Human Hold Randomization----", 0, 12, true);
+		if (g_human_hold_randomization)
+		{
+			clicker::PrintAtCoords("Human randomization: TRUE", 0, 13, true);
+		}
+		else
+		{
+			clicker::PrintAtCoords("Human randomization: FALSE", 0, 13, true);
+		}
+	}
 	void prePrint()
 	{
 		clicker::PrintAtCoords("----ScriptCat AutoClicker----", 0, 0, true);
@@ -64,6 +82,7 @@ namespace util
 		clicker::PrintAtCoords("----CLICK HOLD KEY (CAN'T BE LOWERCASE)----", 0, 9, true);
 		//selected click key at line 10
 		util::printActiveKey();
+		util::printIfHumanRandomization(); //lines 12-13
 	}
 	void upDownCPS()
 	{
@@ -71,31 +90,42 @@ namespace util
 		Sleep(10);
 		if (!a == 0) {
 			const int vanilla = clicker::CharToKey(a);
-			switch (vanilla)
+			if (!(GetAsyncKeyState(VK_UP) || GetAsyncKeyState(VK_DOWN) ||
+				GetAsyncKeyState(VK_RIGHT) || GetAsyncKeyState(VK_LEFT)))
+				//this statement is to stop the user from registering arrow keys as their keybinds for the autoclicker.
 			{
-			case vanillaKeys::right_bracket:
-				g_clicks_per_second++;
-				util::printCPS();
-				break;
-
-			case vanillaKeys::left_braket:
-				if (g_clicks_per_second > 1)
+				switch (vanilla)
 				{
-					g_clicks_per_second--;
+				case vanillaKeys::tilda_key:
+					exit(707);
+					break;
+				case vanillaKeys::right_bracket:
+					g_clicks_per_second++;
 					util::printCPS();
+					break;
+				case vanillaKeys::left_braket:
+					if (g_clicks_per_second > 1)
+					{
+						g_clicks_per_second--;
+						util::printCPS();
+					}
+					break;
+				case vanillaKeys::lowercase_v:
+				case vanillaKeys::capital_v:
+					g_left_active = !g_left_active;
+					util::prePrint();
+					break;
+				case vanillaKeys::f1_or_semicolon:
+					g_human_hold_randomization = !g_human_hold_randomization;
+					util::prePrint();
+					break;
+				default:
+					g_click_key = vanilla;
+					std::string to_print = std::format("Click key: {} {} {}", a, " || ", vanilla);
+					clicker::PrintAtCoords(to_print, 0, 10, true);
+					g_active_key_print = to_print;
+					break;
 				}
-				break;
-			case vanillaKeys::lowercase_v:
-			case vanillaKeys::capital_v:
-				g_left_active = !g_left_active;
-				util::prePrint();
-				break;
-			default:
-				g_click_key = vanilla;
-				std::string to_print = std::format("Click key: {} {} {}", a, " || ", vanilla);
-				clicker::PrintAtCoords(to_print, 0, 10, true);
-				g_active_key_print = to_print;
-				break;
 			}
 		}
 	}
@@ -132,8 +162,23 @@ namespace util
 	{
 		while (1)
 		{
+			if (g_human_hold_randomization)
+			{
+				g_autoclicker_delay_divide = 600;
+			}
+			else
+			{
+				//trying to compensate here.
+				//this is really bad. Don't fucking do this.
+				//I'm doing this b/c im braindead.
+				g_autoclicker_delay_divide = g_clicks_per_second < 25 ? 999 : 950;
+			}
 			if (GetAsyncKeyState(g_click_key) && (clicker::GetActiveWindowTitle() == g_windowName || g_windowName == "NONE"))
 			{
+				if (g_human_hold_randomization)
+				{
+					g_click_hold = clicker::randomNum(25, 40); //randomization of click holding, simulating human.
+				}
 				if (g_left_active)
 				{
 					clicker::leftClickMouse(g_click_hold);
@@ -143,13 +188,31 @@ namespace util
 					clicker::rightClickMouse(g_click_hold);
 				}
 			}
-			clicker::yield(999 / g_clicks_per_second); //800 instead of 1000 to compensate
+			clicker::yield(g_autoclicker_delay_divide / g_clicks_per_second); //600 instead of 1000 to compensate
+		}
+	}
+	void funnyLoadingConsole()
+	{
+		while (1)
+		{
+			for (int i = 0; i < loadingIcons.size(); i++)
+			{
+				std::string toSet = "ScriptCat AutoClicker    " + loadingIcons[i];
+				SetConsoleTitleA(toSet.c_str());
+				clicker::yield(500);
+			}
 		}
 	}
 }
 
 int main()
 {
+	//this is to prevent the user from resizing the console.
+	//taken from https://stackoverflow.com/questions/47358043/can-i-prevent-the-user-of-my-program-to-resize-the-console-window-in-c
+	HWND consoleWindow = GetConsoleWindow();
+	SetWindowLong(consoleWindow, GWL_STYLE, GetWindowLong(consoleWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
+
+
 	util::prePrint(); //pre-print the text
 
 	//thread for [`] detection (EXIT)
@@ -162,7 +225,12 @@ int main()
 
 	//thread for detecting the click key.
 	std::thread click_detection(util::clickKeyDetection);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 	click_detection.detach();
+
+	//thread for setting loading console title
+	std::thread loading_title(util::funnyLoadingConsole);
+	loading_title.detach();
 
 	while (1)
 	{

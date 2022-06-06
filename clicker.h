@@ -4,11 +4,6 @@
 namespace clicker
 {
 	extern const std::string dead_spaces = std::string(200, ' ');
-	void startup()
-	{
-		SetConsoleTitleA("ScriptCat Clicker || TILDA TO EXIT");
-		std::cout << "Remember: press UP ARROW to select current active window!" << '\n';
-	}
 	std::string GetActiveWindowTitle()
 	{
 		//tysm quicknet!
@@ -54,7 +49,8 @@ namespace clicker
 	}
 	int randomNum(int bottom, int top)
 	{
-		return (rand() % top + bottom);
+		srand(time(nullptr));
+		return (rand() % top + bottom); //femboy programming
 	}
 	std::string get_printActiveWindow()
 	{
@@ -71,6 +67,7 @@ namespace clicker
 	{
 		for (int i = 0; i < 50; i++)
 		{
+			SetConsoleTitleA("Exiting.....");
 			clicker::PrintAtCoords("Exiting...", i, i, true);
 			clicker::yield(10);
 		}

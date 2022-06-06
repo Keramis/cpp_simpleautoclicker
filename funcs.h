@@ -11,3 +11,4 @@
 #include <Psapi.h>	//get window name, process api
 #include <thread>	//threads to actually do smth
 #include <chrono>
+#include <time.h>
