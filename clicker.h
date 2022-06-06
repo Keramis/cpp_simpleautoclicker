@@ -48,13 +48,9 @@ namespace clicker
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 		std::cout << text;
 	}
-	void PrintAtCoords(int text, SHORT x, SHORT y, bool clearLine)
+	inline void PrintAtCoords(int text, SHORT x, SHORT y, bool clearLine)
 	{
-		COORD c = { x, y };
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
-		if (clearLine) { std::cout << clicker::dead_spaces; }
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
-		std::cout << std::to_string(text);
+		clicker::PrintAtCoords(std::to_string(text), x, y, clearLine);
 	}
 	int randomNum(int bottom, int top)
 	{

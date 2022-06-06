@@ -31,11 +31,14 @@ namespace util
 		clicker::PrintAtCoords("CPS: " +
 			std::to_string(g_clicks_per_second), 0, 3, true);
 	}
-	void printActiveWindow()
+	void printActiveWindow(bool useActiveWindow)
 	{
 		clicker::PrintAtCoords("Updating....", 0, 6, true);
 		clicker::yield(200);
-		g_windowName = clicker::GetActiveWindowTitle();
+		if (useActiveWindow)
+		{
+			g_windowName = clicker::GetActiveWindowTitle();
+		}
 		clicker::PrintAtCoords(g_windowName, 0, 6, true);
 	}
 	void printActiveKey()
@@ -56,7 +59,7 @@ namespace util
 		util::printCPS();
 		clicker::PrintAtCoords("----SELECTED WINDOW----", 0, 5, true);
 		//selected window at line 6
-		util::printActiveWindow();
+		util::printActiveWindow(false);
 
 		clicker::PrintAtCoords("----CLICK HOLD KEY (CAN'T BE LOWERCASE)----", 0, 9, true);
 		//selected click key at line 10
@@ -115,19 +118,12 @@ namespace util
 			clicker::yield(100);
 			if (GetAsyncKeyState(VK_UP))
 			{
-				//clicker::PrintAtCoords("Updating....", 0, 6, true);
-				//clicker::yield(200);
-				//g_windowName = clicker::GetActiveWindowTitle();
-				//clicker::PrintAtCoords(g_windowName, 0, 6, true);
-				util::printActiveWindow();
+				util::printActiveWindow(true);
 			}
 			else if (GetAsyncKeyState(VK_DOWN))
 			{
-				//clicker::PrintAtCoords("Updating....", 0, 6, true);
-				//clicker::yield(200);
-				//g_windowName = "NONE";
-				//clicker::PrintAtCoords(g_windowName, 0, 6, true);
-				util::printActiveWindow();
+				g_windowName = "NONE";
+				util::printActiveWindow(false);
 			}
 
 		}
