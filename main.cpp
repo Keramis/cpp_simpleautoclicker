@@ -163,7 +163,7 @@ namespace util
 		{
 			if (g_human_hold_randomization)
 			{
-				g_autoclicker_delay_divide = 600;
+				g_autoclicker_delay_divide = 500;
 			}
 			else
 			{
@@ -176,7 +176,11 @@ namespace util
 			{
 				if (g_human_hold_randomization)
 				{
-					g_click_hold = clicker::randomNum(25, 40); //randomization of click holding, simulating human.
+					g_click_hold = clicker::randomNum(29, 34); //randomization of click holding, simulating human.
+				}
+				else
+				{
+					g_click_hold = 1;
 				}
 				if (g_left_active)
 				{
@@ -187,7 +191,7 @@ namespace util
 					clicker::rightClickMouse(g_click_hold);
 				}
 			}
-			clicker::yield(g_autoclicker_delay_divide / g_clicks_per_second); //600 instead of 1000 to compensate
+			clicker::yield(g_autoclicker_delay_divide / g_clicks_per_second); //500 instead of 1000 to compensate
 		}
 	}
 	void funnyLoadingConsole()

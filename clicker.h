@@ -49,7 +49,7 @@ namespace clicker
 	}
 	int randomNum(int bottom, int top)
 	{
-		srand(time(nullptr));
+		srand(unsigned(time(0)));
 		return (rand() % top + bottom); //femboy programming
 	}
 	std::string get_printActiveWindow()
