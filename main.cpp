@@ -1,4 +1,4 @@
-#define _WIN32_WINNT 0x0500
+#define _WIN32_WINNT 0x0500 //for the no-resize window ;)
 #include "funcs.h"
 #include "clicker.h"
 
@@ -17,7 +17,6 @@ bool g_left_active = true;
 std::string g_active_key_print{};
 bool g_human_hold_randomization = false;
 int g_autoclicker_delay_divide = 999;
-
 std::vector<std::string> static const loadingIcons{"|", "/", "--", "\\"}; //thx maddy lmao
 
 namespace vanillaKeys
