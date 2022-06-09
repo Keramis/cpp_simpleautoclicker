@@ -9,15 +9,20 @@
 //use the getWindowName and up arrow to get window (this will require a thread??) [VK_UP]
 //exit the program if the [`] or [~] key is pressed (0xC0)
 
-static int g_clicks_per_second = 6;
-std::string g_windowName{};
-int g_click_key{};
-int g_click_hold = 1;
-bool g_left_active = true;
-std::string g_active_key_print{};
-bool g_human_hold_randomization = false;
-int g_autoclicker_delay_divide = 999;
-std::vector<std::string> static const loadingIcons{"|", "/", "--", "\\"}; //thx maddy lmao
+namespace globals
+{
+	static int g_clicks_per_second = 6;
+	std::string g_windowName{};
+	int g_click_key{};
+	int g_click_hold = 1;
+	bool g_left_active = true;
+	std::string g_active_key_print{};
+	bool g_human_hold_randomization = false;
+	int g_autoclicker_delay_divide = 999;
+	std::vector<std::string> static const loadingIcons{ "|", "/", "--", "\\" }; //thx maddy lmao
+	bool toggle_key = false;
+	bool is_autoclicker_toggled = false;
+}
 
 namespace vanillaKeys
 {
@@ -27,6 +32,7 @@ namespace vanillaKeys
 	constexpr int lowercase_v = 118;
 	constexpr int capital_v = 86;
 	constexpr int f1_or_semicolon = 59;
+	constexpr int asterisk_key = 42;
 }
 
 namespace util
@@ -34,26 +40,26 @@ namespace util
 	void printCPS()
 	{
 		clicker::PrintAtCoords("CPS: " +
-			std::to_string(g_clicks_per_second), 0, 3, true);
+			std::to_string(globals::g_clicks_per_second), 0, 3, true);
 	}
 	void printActiveWindow(bool useActiveWindow)
 	{
 		clicker::PrintAtCoords("Updating....", 0, 6, true);
-		clicker::yield(200);
+		clicker::yield(1);
 		if (useActiveWindow)
 		{
-			g_windowName = clicker::GetActiveWindowTitle();
+			globals::g_windowName = clicker::GetActiveWindowTitle();
 		}
-		clicker::PrintAtCoords(g_windowName, 0, 6, true);
+		clicker::PrintAtCoords(globals::g_windowName, 0, 6, true);
 	}
 	void printActiveKey()
 	{
-		clicker::PrintAtCoords(g_active_key_print, 0, 10, true);
+		clicker::PrintAtCoords(globals::g_active_key_print, 0, 10, true);
 	}
 	void printIfHumanRandomization()
 	{
 		clicker::PrintAtCoords("----Human Hold Randomization----", 0, 12, true);
-		if (g_human_hold_randomization)
+		if (globals::g_human_hold_randomization)
 		{
 			clicker::PrintAtCoords("Human randomization: TRUE", 0, 13, true);
 		}
@@ -62,10 +68,28 @@ namespace util
 			clicker::PrintAtCoords("Human randomization: FALSE", 0, 13, true);
 		}
 	}
+	void printIfToggleKey()
+	{
+		if (globals::toggle_key)
+		{
+			if (globals::is_autoclicker_toggled)
+			{
+				clicker::PrintAtCoords("----CLICK [TOGGLE] KEY (CAN'T BE LOWERCASE) [TOGGLED ON]----", 0, 9, true);
+			}
+			else
+			{
+				clicker::PrintAtCoords("----CLICK [TOGGLE] KEY (CAN'T BE LOWERCASE) [TOGGLED OFF]----", 0, 9, true);
+			}
+		}
+		else
+		{
+			clicker::PrintAtCoords("----CLICK [HOLD] KEY (CAN'T BE LOWERCASE)----", 0, 9, true);
+		}
+	}
 	void prePrint()
 	{
 		clicker::PrintAtCoords("----ScriptCat AutoClicker----", 0, 0, true);
-		if (!g_left_active)
+		if (!globals::g_left_active)
 		{
 			clicker::PrintAtCoords("----CPS-[RIGHT ACTIVE]----", 0, 2, true);
 		}
@@ -77,8 +101,7 @@ namespace util
 		clicker::PrintAtCoords("----SELECTED WINDOW----", 0, 5, true);
 		//selected window at line 6
 		util::printActiveWindow(false);
-
-		clicker::PrintAtCoords("----CLICK HOLD KEY (CAN'T BE LOWERCASE)----", 0, 9, true);
+		util::printIfToggleKey(); //line 9, printing the title for key, as well as if it's a toggle or not.
 		//selected click key at line 10
 		util::printActiveKey();
 		util::printIfHumanRandomization(); //lines 12-13
@@ -98,31 +121,41 @@ namespace util
 				case vanillaKeys::tilda_key:
 					exit(707);
 					break;
+
 				case vanillaKeys::right_bracket:
-					g_clicks_per_second++;
+					globals::g_clicks_per_second++;
 					util::printCPS();
 					break;
+
 				case vanillaKeys::left_braket:
-					if (g_clicks_per_second > 1)
+					if (globals::g_clicks_per_second > 1)
 					{
-						g_clicks_per_second--;
+						globals::g_clicks_per_second--;
 						util::printCPS();
 					}
 					break;
+
 				case vanillaKeys::lowercase_v:
 				case vanillaKeys::capital_v:
-					g_left_active = !g_left_active;
+					globals::g_left_active = !globals::g_left_active;
 					util::prePrint();
 					break;
+
 				case vanillaKeys::f1_or_semicolon:
-					g_human_hold_randomization = !g_human_hold_randomization;
+					globals::g_human_hold_randomization = !globals::g_human_hold_randomization;
 					util::prePrint();
 					break;
+
+				case vanillaKeys::asterisk_key:
+					globals::toggle_key = !globals::toggle_key;
+					util::prePrint();
+					break;
+
 				default:
-					g_click_key = vanilla;
+					globals::g_click_key = vanilla;
 					std::string to_print = std::format("Click key: {} {} {}", a, " || ", vanilla);
 					clicker::PrintAtCoords(to_print, 0, 10, true);
-					g_active_key_print = to_print;
+					globals::g_active_key_print = to_print;
 					break;
 				}
 			}
@@ -151,7 +184,7 @@ namespace util
 			}
 			else if (GetAsyncKeyState(VK_DOWN))
 			{
-				g_windowName = "NONE";
+				globals::g_windowName = "NONE";
 				util::printActiveWindow(false);
 			}
 
@@ -161,46 +194,52 @@ namespace util
 	{
 		while (1)
 		{
-			if (g_human_hold_randomization)
+			if (globals::g_human_hold_randomization)
 			{
-				g_autoclicker_delay_divide = 500;
+				globals::g_autoclicker_delay_divide = 500;
 			}
 			else
 			{
 				//trying to compensate here.
 				//this is really bad. Don't fucking do this.
 				//I'm doing this b/c im braindead.
-				g_autoclicker_delay_divide = g_clicks_per_second < 25 ? 999 : 950;
+				globals::g_autoclicker_delay_divide = globals::g_clicks_per_second < 25 ? 980 : 940;
 			}
-			if (GetAsyncKeyState(g_click_key) && (clicker::GetActiveWindowTitle() == g_windowName || g_windowName == "NONE"))
+			if (clicker::isKeyJustPressed(globals::g_click_key))
 			{
-				if (g_human_hold_randomization)
+				globals::is_autoclicker_toggled = !globals::is_autoclicker_toggled;
+				util::prePrint();
+			}
+			if ((GetAsyncKeyState(globals::g_click_key) || (globals::is_autoclicker_toggled && globals::toggle_key)) &&
+				(clicker::GetActiveWindowTitle() == globals::g_windowName || globals::g_windowName == "NONE"))
+			{
+				if (globals::g_human_hold_randomization)
 				{
-					g_click_hold = clicker::randomNum(29, 34); //randomization of click holding, simulating human.
+					globals::g_click_hold = clicker::randomNum(29, 34); //randomization of click holding, simulating human.
 				}
 				else
 				{
-					g_click_hold = 1;
+					globals::g_click_hold = 1;
 				}
-				if (g_left_active)
+				if (globals::g_left_active)
 				{
-					clicker::leftClickMouse(g_click_hold);
+					clicker::leftClickMouse(globals::g_click_hold);
 				}
 				else
 				{
-					clicker::rightClickMouse(g_click_hold);
+					clicker::rightClickMouse(globals::g_click_hold);
 				}
 			}
-			clicker::yield(g_autoclicker_delay_divide / g_clicks_per_second); //500 instead of 1000 to compensate
+			clicker::yield(globals::g_autoclicker_delay_divide / globals::g_clicks_per_second); //500 instead of 1000 to compensate
 		}
 	}
 	void funnyLoadingConsole()
 	{
 		while (1)
 		{
-			for (int i = 0; i < loadingIcons.size(); i++)
+			for (int i = 0; i < globals::loadingIcons.size(); i++)
 			{
-				std::string toSet = "ScriptCat AutoClicker    " + loadingIcons[i];
+				std::string toSet = "ScriptCat AutoClicker    " + globals::loadingIcons[i];
 				SetConsoleTitleA(toSet.c_str());
 				clicker::yield(500);
 			}

@@ -4,15 +4,23 @@
 namespace clicker
 {
 	extern const std::string dead_spaces = std::string(200, ' ');
+	std::string afterLastBackslash(std::string input)
+	{
+		size_t const pos = input.find_last_of('\\');
+		return input.substr(pos + 1);
+	}
 	std::string GetActiveWindowTitle()
 	{
-		//tysm quicknet!
-		HWND handle = GetForegroundWindow();
+		const HWND topHandle = GetForegroundWindow(); //window handle of foreground window
+		DWORD pid{}; //pid of process (later usage)
+		GetWindowThreadProcessId(topHandle, &pid); //sets the pid to the pid of foreground window
+		HANDLE processHandle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid); //getting handle of the process
 		char buf[500]{};
-		GetWindowTextA(handle, buf, 500);
-		std::string const window_title = buf;
-		return window_title;
+		GetProcessImageFileNameA(processHandle, buf, 500); //puts the path to the .exe into [buf]
+		std::string bufStr = buf; //make it into a string
+		return (clicker::afterLastBackslash(bufStr)); //return the string after last backslash, which is .exe name.
 	}
+	
 	void leftClickMouse(int sleepTime)
 	{
 		mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
@@ -71,5 +79,17 @@ namespace clicker
 			clicker::PrintAtCoords("Exiting...", i, i, true);
 			clicker::yield(10);
 		}
+	}
+	bool isKeyJustPressed(int key)
+	{
+		if (GetAsyncKeyState(key))
+		{
+			clicker::yield(100);
+			if (!GetAsyncKeyState(key))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }
